@@ -88,6 +88,64 @@ export interface Summary {
   key_points: string[]
 }
 
+// Study Plan Types
+export interface StudyPlanRequest {
+  file_id: string
+  subject_name: string
+  exam_date: string
+  language?: string
+}
+
+export interface StudyTopic {
+  name: string
+  importance: number
+  difficulty: string
+  description: string
+  estimated_hours?: number
+  subtopics?: string[]
+}
+
+export interface DailyStudyPlan {
+  day: number
+  date: string
+  topics: string[]
+  actions: string[]
+  estimated_hours: number
+}
+
+export interface TimelineData {
+  total_days: number
+  days_remaining: number
+  study_intensity: string
+  weekly_breakdown: any[]
+}
+
+export interface StudyStatistics {
+  total_topics: number
+  estimated_total_hours: number
+  daily_average_hours: number
+  hardest_topics_count: number
+}
+
+export interface StudyPlanResponse {
+  plan_id: string
+  subject_name: string
+  exam_date: string
+  created_at: string
+  status: string
+  main_topics: StudyTopic[]
+  hardest_topics: StudyTopic[]
+  daily_plan: DailyStudyPlan[]
+  timeline: TimelineData
+  statistics: StudyStatistics
+  general_recommendations: string[]
+  study_techniques: string[]
+  document_text: string
+  language: string
+  provider?: string
+  processing_time: number
+}
+
 class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message)
@@ -218,6 +276,32 @@ export const api = {
   // Health check
   async healthCheck(): Promise<{ status: string; service: string; version: string; timestamp: string }> {
     return apiRequest<{ status: string; service: string; version: string; timestamp: string }>('/health')
+  },
+
+  // Study Plan APIs
+  // Generate study plan
+  async generateStudyPlan(request: StudyPlanRequest): Promise<StudyPlanResponse> {
+    return apiRequest<StudyPlanResponse>('/student/learn/plan/generate', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    })
+  },
+
+  // Get study plan by ID
+  async getStudyPlan(planId: string): Promise<StudyPlanResponse> {
+    return apiRequest<StudyPlanResponse>(`/student/learn/plan/${planId}`)
+  },
+
+  // List all study plans
+  async listStudyPlans(): Promise<{ study_plans: any[]; total_count: number }> {
+    return apiRequest<{ study_plans: any[]; total_count: number }>('/student/learn/plans')
+  },
+
+  // Delete study plan
+  async deleteStudyPlan(planId: string): Promise<{ message: string }> {
+    return apiRequest<{ message: string }>(`/student/learn/plan/${planId}`, {
+      method: 'DELETE',
+    })
   },
 }
 
