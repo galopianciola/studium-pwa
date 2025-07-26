@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, Calendar, Clock, BookOpen, Target, TrendingUp, Download, Share2, AlertTriangle, CheckCircle } from "lucide-react"
 import { api, type StudyPlanResponse, type DailyStudyPlan, type StudyTopic } from "@/lib/api"
+import { StudyTimeline } from "@/components/timeline/StudyTimeline"
 
 function StudyPlanContent() {
   const router = useRouter()
@@ -167,66 +168,80 @@ function StudyPlanContent() {
           </div>
 
           {/* Study Statistics */}
-          {studyPlan.study_statistics && (
+          {studyPlan.statistics && (
             <div className="bg-white rounded-2xl p-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
                 <TrendingUp className="w-5 h-5" />
                 <span>Estadísticas del Plan</span>
               </h3>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-green-50 rounded-xl">
-                  <div className="text-2xl font-bold text-green-600">
-                    {studyPlan.study_statistics.total_topics}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
+                  <div className="text-3xl font-bold text-green-600 mb-1">
+                    {studyPlan.statistics.total_topics}
                   </div>
-                  <div className="text-sm text-green-700">Temas Totales</div>
+                  <div className="text-sm text-green-700 font-medium">Temas Totales</div>
                 </div>
                 
-                <div className="text-center p-4 bg-blue-50 rounded-xl">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {studyPlan.study_statistics.estimated_hours}h
+                <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                  <div className="text-3xl font-bold text-blue-600 mb-1">
+                    {studyPlan.statistics.estimated_total_hours.toFixed(1)}h
                   </div>
-                  <div className="text-sm text-blue-700">Horas Estimadas</div>
+                  <div className="text-sm text-blue-700 font-medium">Horas Estimadas</div>
                 </div>
                 
-                <div className="text-center p-4 bg-orange-50 rounded-xl">
-                  <div className="text-2xl font-bold text-orange-600">
-                    {studyPlan.study_statistics.difficulty_distribution.medium}
+                <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
+                  <div className="text-3xl font-bold text-purple-600 mb-1">
+                    {studyPlan.statistics.daily_average_hours.toFixed(1)}h
                   </div>
-                  <div className="text-sm text-orange-700">Temas Medios</div>
+                  <div className="text-sm text-purple-700 font-medium">Promedio Diario</div>
                 </div>
-                
-                <div className="text-center p-4 bg-red-50 rounded-xl">
-                  <div className="text-2xl font-bold text-red-600">
-                    {studyPlan.study_statistics.difficulty_distribution.hard}
+              </div>
+              
+              {/* Progress visualization */}
+              <div className="mt-6 p-4 bg-gray-50 rounded-xl">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Distribución de Temas</h4>
+                <div className="flex items-center space-x-2">
+                  <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500"
+                      style={{ width: '100%' }}
+                    ></div>
                   </div>
-                  <div className="text-sm text-red-700">Temas Difíciles</div>
+                </div>
+                <div className="flex justify-between text-xs text-gray-600 mt-2">
+                  <span>Fácil</span>
+                  <span>Medio</span>
+                  <span>Difícil</span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Timeline Progress */}
-          {studyPlan.timeline_data && (
+          {/* Enhanced Timeline */}
+          {studyPlan.timeline && (
             <div className="bg-white rounded-2xl p-6 space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800">Progreso del Cronograma</h3>
+              <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
+                <Calendar className="w-5 h-5" />
+                <span>Cronograma de Estudio</span>
+              </h3>
               
-              <div className="space-y-3">
-                {studyPlan.timeline_data.milestones.map((milestone, index) => (
-                  <div key={index} className="flex items-center space-x-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-gray-800">{milestone.title}</span>
-                        <span className="text-sm text-gray-600">{formatDate(milestone.date)}</span>
-                      </div>
-                      <Progress value={milestone.completion_percentage} className="h-2" />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <StudyTimeline 
+                timeline={studyPlan.timeline} 
+                planId={studyPlan.plan_id}
+                onMilestoneUpdate={(milestone) => {
+                  // Update the local study plan state when milestone is updated
+                  setStudyPlan(prev => {
+                    if (!prev) return prev
+                    const updatedTimeline = { ...prev.timeline }
+                    const milestoneIndex = updatedTimeline.milestones.findIndex(m => m.date === milestone.date)
+                    if (milestoneIndex >= 0) {
+                      updatedTimeline.milestones[milestoneIndex] = milestone
+                    }
+                    return { ...prev, timeline: updatedTimeline }
+                  })
+                }}
+              />
             </div>
           )}
 
@@ -243,8 +258,8 @@ function StudyPlanContent() {
                   <div key={index} className="border border-gray-200 rounded-xl p-4">
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-semibold text-gray-800">{topic.name}</h4>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getDifficultyColor(topic.difficulty)}`}>
-                        {getDifficultyIcon(topic.difficulty)}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getDifficultyColor(topic.difficulty as 'easy' | 'medium' | 'hard')}`}>
+                        {getDifficultyIcon(topic.difficulty as 'easy' | 'medium' | 'hard')}
                         <span className="ml-1 capitalize">{topic.difficulty}</span>
                       </span>
                     </div>
@@ -275,47 +290,6 @@ function StudyPlanContent() {
             </div>
           )}
 
-          {/* Daily Study Plans */}
-          {studyPlan.daily_plan && studyPlan.daily_plan.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800">Plan Diario</h3>
-              
-              <div className="space-y-4">
-                {studyPlan.daily_plan.map((dailyPlan: any, index: number) => (
-                  <div key={index} className="border border-gray-200 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-gray-800">
-                        Día {dailyPlan.day} - {formatDate(dailyPlan.date)}
-                      </h4>
-                      <span className="text-sm text-gray-600">
-                        {dailyPlan.estimated_hours}h de estudio
-                      </span>
-                    </div>
-                    
-                    {dailyPlan.actions && dailyPlan.actions.length > 0 && (
-                      <div className="space-y-2">
-                        {dailyPlan.actions.map((action: string, actIndex: number) => (
-                          <div key={actIndex} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                            <BookOpen className="w-4 h-4 text-gray-600 flex-shrink-0" />
-                            <div className="flex-1">
-                              <span className="text-gray-800">{action}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {dailyPlan.notes && (
-                      <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                        <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">Notas:</span>
-                        <p className="text-sm text-blue-800 mt-1">{dailyPlan.notes}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Study Recommendations */}
           {studyPlan.general_recommendations && studyPlan.general_recommendations.length > 0 && (
@@ -336,37 +310,73 @@ function StudyPlanContent() {
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-col gap-3">
-            <Button 
-              onClick={() => {
-                // Store the study plan data for the modes page
-                localStorage.setItem('latestStudyPlan', JSON.stringify(studyPlan))
-                // Store the document text separately for activity generation
-                if (studyPlan.document_text) {
-                  localStorage.setItem('studyDocumentText', studyPlan.document_text)
-                }
-                router.push('/student/modes')
-              }}
-              className="w-full bg-[#257e52] hover:bg-[#1f6b44] text-white py-4 text-lg font-semibold"
-              size="lg"
-            >
-              🚀 Comenzar a Estudiar Ahora
-            </Button>
+          <div className="space-y-4">
+            {/* Main CTA */}
+            <div className="relative">
+              <Button 
+                onClick={() => {
+                  // Store the study plan data for the modes page
+                  localStorage.setItem('latestStudyPlan', JSON.stringify(studyPlan))
+                  // Store the document text separately for activity generation
+                  if (studyPlan.document_text) {
+                    localStorage.setItem('studyDocumentText', studyPlan.document_text)
+                  }
+                  router.push('/student/modes')
+                }}
+                className="w-full bg-gradient-to-r from-[#257e52] to-[#34d399] hover:from-[#1f6b44] hover:to-[#10b981] text-white py-6 text-xl font-bold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
+                size="lg"
+              >
+                <div className="flex items-center justify-center space-x-3">
+                  <span className="text-2xl">🚀</span>
+                  <span>Comenzar a Estudiar Ahora</span>
+                  <span className="text-2xl">📚</span>
+                </div>
+              </Button>
+              
+              {/* Urgency indicator */}
+              {studyPlan.timeline?.exam_countdown.urgency_level === 'high' && (
+                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">
+                  ¡URGENTE!
+                </div>
+              )}
+            </div>
             
+            {/* Quick stats */}
+            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4 border border-blue-200">
+              <div className="text-center">
+                <div className="text-sm text-gray-600 mb-1">Tu plan incluye:</div>
+                <div className="flex justify-center space-x-6 text-sm">
+                  <div className="flex items-center space-x-1">
+                    <BookOpen className="w-4 h-4 text-blue-600" />
+                    <span className="font-semibold">{studyPlan.statistics?.total_topics} temas</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Clock className="w-4 h-4 text-green-600" />
+                    <span className="font-semibold">{studyPlan.statistics?.estimated_total_hours.toFixed(0)}h de estudio</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Target className="w-4 h-4 text-purple-600" />
+                    <span className="font-semibold">{studyPlan.timeline?.milestones.length} hitos</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Secondary actions */}
             <div className="flex flex-col sm:flex-row gap-3">
               <Button 
                 onClick={() => router.push('/student/learn/plan')}
                 variant="outline"
-                className="flex-1 py-3 border-2 border-gray-300 hover:bg-gray-50"
+                className="flex-1 py-3 border-2 border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400 transition-colors"
               >
-                Crear Nuevo Plan
+                📝 Crear Nuevo Plan
               </Button>
               <Button 
                 onClick={() => router.push('/student/dashboard')}
                 variant="outline"
-                className="flex-1 py-3 border-2 border-gray-300 hover:bg-gray-50"
+                className="flex-1 py-3 border-2 border-gray-300 hover:bg-gray-50 transition-colors"
               >
-                Ir al Dashboard
+                🏠 Ir al Dashboard
               </Button>
             </div>
           </div>

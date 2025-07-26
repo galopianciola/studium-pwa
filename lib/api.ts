@@ -113,11 +113,32 @@ export interface DailyStudyPlan {
   estimated_hours: number
 }
 
+export interface TimelineMilestone {
+  date: string
+  title: string
+  description: string
+  type: string
+  topics: string[]
+  completion_target: number
+  completed?: boolean
+  completed_at?: string
+  study_focus?: string
+  study_activities?: string[]
+  learning_objectives?: string[]
+}
+
 export interface TimelineData {
   total_days: number
   days_remaining: number
   study_intensity: string
   weekly_breakdown: any[]
+  milestones: TimelineMilestone[]
+  exam_countdown: {
+    days_left: number
+    exam_date: string
+    countdown_message: string
+    urgency_level: string
+  }
 }
 
 export interface StudyStatistics {
@@ -300,6 +321,20 @@ export const api = {
   // Delete study plan
   async deleteStudyPlan(planId: string): Promise<{ message: string }> {
     return apiRequest<{ message: string }>(`/student/learn/plan/${planId}`, {
+      method: 'DELETE',
+    })
+  },
+
+  // Complete milestone
+  async completeMilestone(planId: string, milestoneDate: string): Promise<{ message: string; milestone_date: string; completed_at: string }> {
+    return apiRequest<{ message: string; milestone_date: string; completed_at: string }>(`/student/learn/plan/${planId}/milestone/${milestoneDate}/complete`, {
+      method: 'POST',
+    })
+  },
+
+  // Uncomplete milestone
+  async uncompleteMilestone(planId: string, milestoneDate: string): Promise<{ message: string; milestone_date: string }> {
+    return apiRequest<{ message: string; milestone_date: string }>(`/student/learn/plan/${planId}/milestone/${milestoneDate}/complete`, {
       method: 'DELETE',
     })
   },
